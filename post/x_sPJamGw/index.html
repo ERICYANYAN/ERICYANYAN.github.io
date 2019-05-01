@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Android 性能优化 | 雁</title>
+<meta name="description" content="# Excelsior # 精益求精 #">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://ERICYANYAN.github.io/favicon.ico?v=1556720931320">
+<link rel="stylesheet" href="https://ERICYANYAN.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://ERICYANYAN.github.io">
+        <img src="https://ERICYANYAN.github.io/images/avatar.png?v=1556720931320" class="site-logo">
+        <h1 class="site-title">雁</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="https://ERICYANYAN.github.io" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="https://ERICYANYAN.github.io/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="https://ERICYANYAN.github.io/post/about/" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      # Excelsior # 精益求精 #
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/ERICYANYAN/ERICYANYAN.github.io" target="_blank">ZengYan</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Android 性能优化</h2>
+            <div class="post-date">2019-05-01</div>
+            
+            <div class="post-content">
+              <h1 id="android-性能优化实战-guideline">android 性能优化实战 Guideline</h1>
+<p>[TOC]</p>
+<h3 id="前言">前言</h3>
+<p>​	首先，强烈推荐 <a href="https://cn.udacity.com/course/android-performance--ud825">google 官方的性能优化指南</a> 。这个教程有点长，但是讲得非常细。如果不喜欢看视频的同学，可以移步到 <a href="https://www.kancloud.cn/kancloud/android-performance">google官方性能指南(文字版)</a>。</p>
+<p>​	相对于 IOS 来说，我们所应对的机型，厂家更多，而普遍 android 手机的性能却偏差。当我们做开发的时候，时刻要惦记着那些一个 899 的红米用了三年的用户们。</p>
+<p>​	当然，上面的课程适合慢慢学习，而且比较偏理论。下面是结合我们知乎 app 的实战 GuideLine.</p>
+<hr>
+<h3 id="渲染-rendering">渲染 Rendering</h3>
+<p>​	渲染几乎是 Android 应用层的全部工作，也是性能优化中性价比最高的优化点。稍微注意一下，页面性能就有大大的提升。</p>
+<h4 id="减少无用的-background">减少无用的 background</h4>
+<p>如果你的 fragment 自己带有背景颜色。可以考虑在所在的 activity 中加上。</p>
+<pre><code class="language-java">getWindow().setBackgroundDrawable(null);// 去除 theme 中的背景
+getRootView().setBackground(null);// 去除 activity 自己布局的背景
+</code></pre>
+<p>当然，在知乎 app 中我们基本用的都是 fragment ，并且 HostActivity 都是没有背景的。所以我们只需要在 fragment 加上：</p>
+<pre><code class="language-java"> getActivity().getWindow().setBackgroundDrawable(null); 
+</code></pre>
+<p>==注意：这样做的时候，如果下一个 fragment 没有背景，使用的是activity 的背景色，则背景就会变成纯黑。需要注意。==</p>
+<h4 id="cliprect-和-quickreject">clipRect 和 quickReject</h4>
+<p>当你写一个需要一个带有重叠卡片的自定义 view 时，可以使用这个 api 来告诉底层那个一个区域你是不用绘制的，来减少重复绘制。</p>
+<p>具体可以在 <a href="https://www.kancloud.cn/kancloud/android-performance">google官方性能指南(文字版)</a> 中搜索。</p>
+<h4 id="merge-标签">merge 标签</h4>
+<p>比如我要实现类似这样的布局</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190418145307564.png" alt="image-20190418145307564"></p>
+<p>我们先来看一下这个布局，「1」的部分是这个页面的第一个模块，「2」「3」是第二个模块。这时候我们开始实现。我们可以用相对布局直接实现，但是如果第二个模块特别复杂，你希望可以抽出一个文件来写。那就可以使用**<include>** 标签来实现。</p>
+<p>首先写一个模块2 的 xml</p>
+<pre><code class="language-xml">&lt;RelativeLayout xmlns:tools=&quot;http://schemas.android.com/tools&quot;
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;wrap_content&quot;
+    tools:ignore=&quot;ResourceName&quot;&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/text2&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:background=&quot;@color/orange_50&quot;
+        android:gravity=&quot;center&quot;
+        android:text=&quot;22222222&quot;
+        android:textSize=&quot;30dp&quot; /&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/text3&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:layout_alignTop=&quot;@id/text2&quot;
+        android:layout_toRightOf=&quot;@id/text2&quot;
+        android:background=&quot;@color/blue_50&quot;
+        android:gravity=&quot;center&quot;
+        android:text=&quot;333333&quot;
+        android:textSize=&quot;30dp&quot; /&gt;
+
+&lt;/RelativeLayout&gt;
+</code></pre>
+<p>然后  include 进入主布局，这样就做到两个模块隔离，更加优雅。</p>
+<pre><code class="language-xml">&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    xmlns:tools=&quot;http://schemas.android.com/tools&quot;
+    android:id=&quot;@+id/more_scroll_view&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;match_parent&quot;
+    tools:ignore=&quot;ResourceName&quot;&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/module1&quot;
+        android:layout_width=&quot;match_parent&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:background=&quot;@color/green_50&quot;
+        android:gravity=&quot;center&quot;
+        android:text=&quot;1111111&quot;
+        android:textSize=&quot;30dp&quot; /&gt;
+
+    &lt;include
+        layout=&quot;@layout/module2&quot;
+        android:layout_width=&quot;match_parent&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:layout_below=&quot;@id/module1&quot;&gt;&lt;/include&gt;
+
+&lt;/RelativeLayout&gt;
+</code></pre>
+<p>但是这样引发了一个非常尴尬的问题。==布局文件的层次白白加深了一层==</p>
+<p>这时 merge 就排上用场了，merge 就只是做一个文件的隔离，在 include 之后，merge 标签内的代码会直接挂载在主布局上，在 merge 标签写上 tools:parentTag=&quot;你的主布局类型&quot; 就可以方便预览。</p>
+<p>我们把模块 2 的布局修改成 merge.</p>
+<pre><code class="language-xml">&lt;merge xmlns:tools=&quot;http://schemas.android.com/tools&quot;
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    tools:ignore=&quot;ResourceName&quot;
+    tools:parentTag=&quot;RelativeLayout&quot;// 方便预览
+       &gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/text2&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:background=&quot;@color/orange_50&quot;
+        android:layout_below=&quot;@id/module1&quot; // 这里值的是主布局里面的模块1
+        android:gravity=&quot;center&quot;
+        android:text=&quot;22222222&quot;
+        android:textSize=&quot;30dp&quot; /&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/text3&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:layout_alignTop=&quot;@id/text2&quot;
+        android:layout_toRightOf=&quot;@id/text2&quot;
+        android:background=&quot;@color/blue_50&quot;
+        android:gravity=&quot;center&quot;
+        android:text=&quot;333333&quot;
+        android:textSize=&quot;30dp&quot; /&gt;
+&lt;/&gt;
+</code></pre>
+<p>在主布局include</p>
+<pre><code class="language-xml">&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    xmlns:tools=&quot;http://schemas.android.com/tools&quot;
+    android:id=&quot;@+id/more_scroll_view&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;match_parent&quot;
+    tools:ignore=&quot;ResourceName&quot;&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/module1&quot;
+        android:layout_width=&quot;match_parent&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:background=&quot;@color/green_50&quot;
+        android:gravity=&quot;center&quot;
+        android:text=&quot;1111111&quot;
+        android:textSize=&quot;30dp&quot; /&gt;
+
+    &lt;include layout=&quot;@layout/module2&quot;&gt;&lt;/include&gt; // 注意这里其实啥也不用配置
+
+&lt;/RelativeLayout&gt;
+</code></pre>
+<p>这样我们就做到我们想要的文件隔离，但是却又可以扁平化得实现布局。</p>
+<p>其实个人觉得 <merge> 的最佳实现就是，先在一个文件里面写，然后写完一个模块就是新建一个文件把这个文件放过去，基本可以无缝移动，不会影响布局。</p>
+<h4 id="去除自定义-view-的无用布局">去除自定义 view 的无用布局</h4>
+<p>当我们想要自定义 view 去做一个功能模块的封装的时候，一般都是继承一个 Layout, 然后在构造方法中写上。</p>
+<pre><code class="language-java">View view = LayoutInflater.from(context).inflate(R.layout.XXXXX, null);
+</code></pre>
+<p>这样的问题是：白白引入了一层无用的布局。现在你的布局结构是</p>
+<pre><code class="language-flow">op=&gt;operation: 自定义布局(继承RelativeLayout)
+op2=&gt;operation: inflate 进来的根布局(RelativeLayout)
+op3=&gt;operation: view
+e=&gt;end：
+op-&gt;op2-&gt;op3
+</code></pre>
+<p>这时候inflate 进来的根布局是没有任何作用的。所以我们可以把它去除。</p>
+<p>首先，我还是继承RelativeLayout 做一个自定义view 叫做 MyView.写一个 xml 如下</p>
+<pre><code class="language-xml">&lt;com.zhihu.android.app.ui.fragment.more.widget.MyView // 这个就是我的自定义view
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    xmlns:tools=&quot;http://schemas.android.com/tools&quot;
+    android:id=&quot;@+id/more_scroll_view&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;match_parent&quot;
+    tools:ignore=&quot;ResourceName&quot;&gt;
+    
+    &lt;TextView
+        android:id=&quot;@+id/text1&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot; /&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/text2&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot; /&gt;
+&lt;/com.zhihu.android.app.ui.fragment.more.widget.MyView&gt;
+</code></pre>
+<p>然后在 java 文件中</p>
+<pre><code class="language-java">public class MyView extends RelativeLayout {
+
+    public MyView(Context context) {
+        super(context);
+    }
+
+    public MyView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    public MyView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+    }
+
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        TextView textView1 = findViewById(R.id.text1);
+        TextView textView2 = findViewById(R.id.text2);
+        //do something 
+    }
+}
+</code></pre>
+<p>这样写的自定义 view 的层级结构就会少一层。</p>
+<pre><code class="language-flow">op=&gt;operation: 自定义布局(继承RelativeLayout)
+op3=&gt;operation: view
+op-&gt;op3
+</code></pre>
+<p>在主布局使用的时候，只需要include 这个 上面这个layout 就 ok了。</p>
+<p>如果你就想用 <strong>inflate</strong> 来加载布局，就可以用上一个优化点的**<merge>**来做。</p>
+<p>参考自 <a href="%22%3Chttp://www.jcodecraeer.com/a/anzhuokaifa/androidkaifa/2015/0512/2869.html%3E%22">如何更好的通过Inflate layout的方式来实现自定义view</a></p>
+<h4 id="懒加载布局-viewstub-标签">懒加载布局 viewStub 标签</h4>
+<p>​	在日常需求中，经常有 「如果 XXX ,这个view 就展现，否则不展现」的需求。我们的日常做法，就是直接写一个 view ，然后需要用到的时候就 setVisibility() 。</p>
+<p>​	但是我们第一次加载这个页面的时候，这个 view 已经被加载和初始化。但是有可能用户不需要这个 view。这就造成了资源的浪费。我们就可以使用 <strong>viewStub</strong> 标签来处理。用法很简单，直接上文档 <a href="%22%3Chttps://developer.android.com/reference/android/view/ViewStub%3E%22">viewStub 官方用法</a>.</p>
+<p><strong>坑点</strong>: viewStub 只能被 inflate 一次，当第二次 inflate 会直接报错。</p>
+<p>​	现在我们在写业务逻辑的时候，就可以不写这么多的 gone ，Visiable 。在需要展现的 case 中，通过 viewStub 去inflate 即可。这样可以避免不必要的inflate 和可以延后view 的创建。优化启动页面的速度。</p>
+<h4 id="一些注意点">一些注意点</h4>
+<ul>
+<li>如果能用 Invisiable 代替 gone .尽量这么做，因为Invisiable 只会去调用 draw过程。而 gone 会去重新 measure layout draw 再走一遍。</li>
+<li>不要用 relativeLayout 做嵌套,RelativeLayout 的 measure 方法 需要 横向和竖向各跑一遍，嵌套之后就变成了2的N次方的方法调用增长。</li>
+<li>少用 LinearLayout 的weight 属性，特别是在嵌套层级中。weight 属性需要 measure 两次，大家可以看看源码。嵌套之后的性能影响更大。</li>
+</ul>
+<hr>
+<h3 id="内存-memory">内存 Memory</h3>
+<h4 id="内存泄漏的危害">内存泄漏的危害</h4>
+<p>简单来说，就是<strong>长生命周期</strong>的对象 A 持有了<strong>短生命周期</strong>的对象 B 。这时候 B 的生命周期到了，想死，但是 A 却说 我还需要你 ，所以你暂时不能死。但是其实 A 是不需要 B 的。这时候 B 就很无奈得继续陪着 A 活下去 。</p>
+<p>​	B 没有被销毁， 所以内存没有被释放。这就是常见的内存泄漏。</p>
+<p>​	其实内存泄漏不是问题，问题是，每个 app 的可用内存是有限度的。当内存泄漏过多后，我们的 app 占用内存<strong>很容易</strong>到达界限，就会<strong>频繁</strong>引起 GC ，GC 后，系统会给我们的 app 分配更大的一点空间。当手机的内存被吃光的时候，就 OOM 了。</p>
+<p>​	当然，现在手机内存过剩，OOM 也不会这么容易发生。但是<strong>频繁</strong> GC 带来的危害是，每一帧我们用来处理 GC 的时间越多，我们用来计算和渲染的时间就越少，掉帧越来越多，用户就会明显感觉到<strong>卡顿</strong>。</p>
+<p>在内存方面，我们首先需要修复的大头是内存泄漏。我们这拿 NewProfileFragment 来做例子，</p>
+<p>step by step:</p>
+<h4 id="检测内存是否泄漏">检测内存是否泄漏</h4>
+<p>​	简单的方法是使用 LeakCanary ，我们项目已经接入，直接使用即可。但是一般来说 LeakCanary 都是一些比较明显的错误，或者只能告诉你这里有内存泄漏存在。而且 LeakCanary 加载速度有点慢，还不如直接手动 debug。</p>
+<p>​	<strong>在开发者模式中打开「不保留活动」</strong>，跑起你的组件。这里推荐在组件工程上做内存泄漏调试，一是打包快，二是内容少，可以去除一些无关信息的干扰。</p>
+<p>​	进入 NewProfileFragment 三次，最后返回组件的 MainActivity 。打开 AS 的 Profiler . 点击 Memory 然后 手动 gc 一把。然后 Dump 一下。</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190422151203453.png" alt="image-20190422151203453"></p>
+<p>我们可以通过包名来搜索，找到 NewProfileFragment , 内存中实例数为 3 个。ok ，标准内存泄漏，一首凉凉送给自己。 ==(工具的使用和每一个数字的意思 请看<a href="%22%3Chttps://developer.android.com/studio/profile/memory-profiler?hl=zh-cn%3E%22">memory tool</a>)==</p>
+<p>在类列表中，可以查看以下信息：</p>
+<ul>
+<li><strong>Heap Count</strong>：堆中的实例数。</li>
+<li><strong>Shallow Size</strong>：此堆中所有实例的总大小（以字节为单位）。</li>
+<li><strong>Retained Size</strong>：为此类的所有实例而保留的内存总大小（以字节为单位）。</li>
+</ul>
+<p>点击对应类查看实例：</p>
+<p>上面的框 「Instance View」 显示这个类的三个实例。点击其中一个，下面就显示它的引用链。</p>
+<p>在 <strong>Instance View</strong> 中，每个实例都包含以下信息：</p>
+<ul>
+<li><strong>Depth</strong>：从任意 GC 根到所选实例的最短 hop 数。</li>
+<li><strong>Shallow Size</strong>：此实例的大小。</li>
+<li><strong>Retained Size</strong>：此实例支配的内存大小（根据 <a href="https://en.wikipedia.org/wiki/Dominator_(graph_theory)?hl=zh-cn">dominator 树</a>）。</li>
+</ul>
+<p>我们看引用链第 2 个</p>
+<blockquote>
+<p>fragmentDelegate  in ProfileHeaderCard</p>
+</blockquote>
+<p>表示的意思是，ProfileHeaderCard 持有的 fragmentDelegate 持有了 NewProfileFragment 实例。</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190422155704513.png" alt="image-20190422155704513"></p>
+<h4 id="分析原则">分析原则</h4>
+<p>​	**一定有一个长生命的东西持有了我的对象，导致我的对象不能被释放。现在就是要找出这个东西是什么。**抓住这个原则，然后再具体情况具体分析。用 NewProfileFragment 作为例子：</p>
+<h4 id="内存泄漏分析-step-by-step">内存泄漏分析 Step by step:</h4>
+<ul>
+<li><strong>审视自己的架构是否存在问题</strong>。 —&gt;有问题，但问题不大</li>
+</ul>
+<p>​	已知 NewProfileFragment 是一个 MVP 架构，想了解请看 <a href="%22%3Chttp://wiki.in.zhihu.com/pages/viewpage.action?pageId=62662874%3E%22">新版 Profile 页技术 RFC</a>。所以理想情况下是这样：</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190424120759577.png" alt="image-20190424120759577"></p>
+<p>所以说引用链中，和 Cards ，Presenter 之间的引用是正常的。但是这样有一个问题，外部随便持有岛内一个对象，都会导致整个岛不能被释放。比如说外部有个单例持有岛内一个自定义view ，本来只需要泄漏一个 view 。但是因为架构问题，整个自定义 view 持有了 fragment 的引用，所以造成 fragment 也被泄漏，同理，presenter 也凉凉。</p>
+<ul>
+<li><strong>是否被单例类持有</strong>。 —&gt;否</li>
+<li><strong>rxjava 等异步操作是否及时处理。</strong> —&gt;已经处理</li>
+<li><strong>是否使用了非静态内部类</strong> -&gt; 否</li>
+</ul>
+<p>到了这一步应该明显的泄漏都已经排除了，接下来就是体力活，去查看我们的还有什么地方可能被第三方引用。</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190424130058712.png" alt="image-20190424130058712"></p>
+<p>我们专注一个引用，右键，我们可以去到这个引用的实例，在这里就是去看 ProfileHeaderCard 被谁引用了。点击 Go to Instance.然后继续分析 ProfileHeaderCard .</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190424131040066.png" alt="image-20190424131040066"></p>
+<p>到这里我们发现，ProfileHeaderCard 有 ZHDraweeView 的 mCallerContext 被一个叫 BitmapMemoryCacheKey 的东西持有了。看看代码：</p>
+<pre><code class="language-java">   ImageUtils.generatePalette(mAvatar, avatarUri, colorGenerater);
+// ImageUtils 是 base 库提供的工具。
+// generatePalette() 这个方法是获取图片中的 Palette 对象，并做相应的处理。
+// colorGenerater 只是一个 palette 处理器
+</code></pre>
+<p>现在还不敢下结论，我们现在在把对应的代码注释一把，看看是否这这里导致的问题先。</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190424132329040.png" alt="image-20190424132329040"></p>
+<p>检测修改后的代码，发现NewProfileFragment 不在泄漏了。问题就是这个。最后我们来分析代码。</p>
+<pre><code class="language-JAVA">/**
+     * 获取图片中的 Palette 对象，并做相应的处理。
+     */
+    public static void generatePalette(final ZHDraweeView pDraweeView, final Uri target, final
+    GeneratePaletteListener pPaletteListener) {
+        ImageRequest request = ImageRequestBuilder.newBuilderWithSource(target)
+                .build();// 创建一个 request
+        final PaletteCache paletteCache = PaletteCache.getInstance();
+        Palette cachedPalette = paletteCache.get(target.toString());
+      // 这里是做了一个缓存，通过uri 来保存一个 palette 没有问题
+        if (cachedPalette != null) {
+            pPaletteListener.onPaletteGenerated(cachedPalette);
+        } else {
+            DataSource&lt;CloseableReference&lt;CloseableImage&gt;&gt; dataSource = Fresco.getImagePipeline().fetchDecodedImage(request, pDraweeView);// 这里是问题代码
+            dataSource.subscribe(new BaseBitmapDataSubscriber() {
+
+                @Override
+                protected void onNewResultImpl(@Nullable final Bitmap pBitmap) {
+                   ..... 无关
+                }
+                @Override
+                protected void onFailureImpl(final DataSource&lt;CloseableReference&lt;CloseableImage&gt;&gt; dataSource) {
+
+                }
+            }, CallerThreadExecutor.getInstance());
+        }
+        pDraweeView.setImageURI(target);
+    }
+</code></pre>
+<p>我们关注这个方法。</p>
+<pre><code class="language-java">Fresco.getImagePipeline().fetchDecodedImage(ImageRequest imageRequest ， Object callerContext) 
+</code></pre>
+<p>这个 callerContext 是什么呢？我们查查 fresco 的官网。</p>
+<p><img src="https://others-1253534728.cos.ap-chengdu.myqcloud.com/image-20190424133027355.png" alt="image-20190424133027355"></p>
+<p>我认为这个东西只是一个标记，会作为图片的一个属性保存在缓存中。所以我们之前是把 View 给传进去，所以这个view 被外部持有了。我们验证一下，我们把这个方法复制一份，我们把 view 的 id 作为 callerContext 传进去。改成</p>
+<pre><code class="language-java">fetchDecodedImage(request, pDraweeView.getId())
+</code></pre>
+<p>经过测试显示，内存泄漏消失了，图片也正常展示，功能正常。最后总结一下：</p>
+<blockquote>
+<ul>
+<li>==<strong>审视自己的架构是否存在问题</strong>==</li>
+<li>==<strong>是否被单例类持有</strong>==</li>
+<li>==<strong>rxjava 等异步操作是否及时处理</strong>==</li>
+<li>==<strong>是否使用了非静态内部类</strong>==</li>
+<li>==<strong>具体方法具体分析</strong>==</li>
+</ul>
+</blockquote>
+<p>debug 内存泄漏是一个花时间的活，虽然刚刚看起来 NewProfileFragment 这个例子行如流水，但是其实花了我大半天的时间才找出问题。</p>
+<h3 id="最后的挣扎">最后的挣扎</h3>
+<p>​	当你经历很多个孤独优化的夜晚，最后发现你的页面在一些低端机上的效果还是不尽人意的时候，在这里可以找到一些选择。</p>
+<p>​	ps: 补充一个数据，系统版本低于 8 的 DAU 在 android DAU 中的占比在 25%。虽然系统不代表手机性能，但是可以起到参考，因为真实情况会更加差，因为低端机可以升级到高版本，或者很多千元机都直接上 9 。具体数据可以看 <a href="https://za.in.zhihu.com/report/12296?dimensions=NobwRAbghgNgrgUwDIEsDOAXMAuYBdAGjADMEMBjACwGUMoM40dxp5l0tswA5AeQBUA%2BgDEAovwDCACVEARMAF8iKACY4ATAEYArAGYiAOygBbBDjAqEEFOQSCA9mkEQEAJzQp7BsEQAOr%2B183DABPbhMzLktrWwcnF3dPbyIAmAR%2BEKDzA3tXY1gfMHJXBHp0lFNzdQAGTQB2AFpqxs0AFgACNuxNTWxqgE5CuF8VMv4KyLAazQAOJt0mgDZ26tbuxe7qwtCsqIRiKDgYLCJclABzFCMYAEk1PqJyKFcVK9gUUJwZmZTS44mcAcYGgEERKBdKBJnq9rh8QoDYCCFHggA&amp;filter=N4IgLgngDgpiBcICGA7AJiANCAZgSwBswYAnAZwQG1RJYEQ8UsQ08BbGFMvAeyfgBMARmxQkYYiX6UQAQXQkeeNAAUAFnzgBdAL6Ya0OIjIwCMAMZgeJZqw5de-AMwAWUeMn9cSAiZA7dIA&amp;fromDate=2019-04-22&amp;granularity=day&amp;limit=10&amp;metrics=NobwRAlgJmBcCMAWANGAdgQwLYFM5kAm-Qe69AHUzFQwHNKAnHSjAFwgHs05xGBPABz1jAAzCABtGOOjFTCxEjmG598LGuSGjxNAM5xQC3vzBacInAGNGKtVAi40W1u1gAmeKh5NNTsABEcWgGtLHgB1HAAjMABfZE4DfGNTCytUGzsHNjhXd08JbwBZFnDRHDDImLilAQw0KXVZbV1KwxT6zR1YPUVDRPNLVVTbHHtHLLcwD0YvfABBWpoWaAAFAAs2PAr9KqMTPta04YynbIncmm8IJYwYTe6E3eSBsAORzJdxyemBS7W0DYBdW7xAS9R7WIavJwAZhQpymeXwggwImM0UBgIo1DoDH68juAkYKxwjAwAGUAsSzCs1MITFAAHLYQzQAD6ZhEEGGjBZ0GiMTAC1MABVgWAasiuFpGNYmBgAKpoCDSgRoACuWHCckGWh4IgwXAAYiosEx8BA0OJKFqwGYWFg7MqwGozHQmDghUN8M4AAzwABsAFp4M4Az6AATwAAcsEQAE4XABWNSqnhQN0e3Be30AdgD3sD8ATEfgCGcLmcanxbQkOBu-yAA&amp;toDate=2019-04-22">Android DAU 手机系统分布</a>。</p>
+<h4 id="低版本降级">低版本降级</h4>
+<p>​	低端机对动画的支持，硬件性能的不足，是无法避免的。所以跟你的产品<strong>好好地</strong>解释这个问题。并<strong>提出对低版本的用户做动画降级方案</strong>。</p>
+<h4 id="简化交互动画">简化交互动画</h4>
+<p>​	交互动画不是越炫酷越好，不是 Alpha 渐变越多越牛逼。当这个交互过于复杂是，建议你去找设计老师<strong>心平气和</strong>地说一下你的瓶颈。并提出一个<strong>可简化的方案</strong>。最好能带上一个**同类型交互的友商 app **去做对比。</p>
+<p>​	拿「我的页面」为例，本来设计老师想要一个悬浮 toolbar 加一个跟手的 Alpha 渐变。但是在低端机型上 在做 Alpha 渐变的时候会有明显卡顿。当然如果开启了硬件加速是可以优化，但是成本比较大。然后永庆大佬发现京东 app 的顶部栏是类似的效果，但是没有做跟手，只是在滑动到30%，60%，100% 的时候去设置一次 Alpha 。经过一番沟通，就成功简化了动画。</p>
+<h4 id="沟通的问题">沟通的问题</h4>
+<p>​	这里就不赘述了，直接看由劳文超大佬分享的 <a href="http://wiki.in.zhihu.com/pages/viewpage.action?pageId=38831882">给工程师的沟通指南</a>。个人建议，在跟产品或者设计老师沟通之前，必须要想好方案，而不是简单的三个字 ，&quot;做不了&quot; 。</p>
+<h3 id="end">END</h3>
+<p>​	本文还是比较简单，后续会持续更新和整理。有任何问题和建议请找@曾雁。</p>
+<p>​	Performance is matter. Good luck。</p>
+<p>​</p>
+<p>​</p>
+
+            </div>
+            
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>
