@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://ERICYANYAN.github.io</id>
     <title>没脸见人</title>
-    <updated>2020-06-14T16:22:57.497Z</updated>
+    <updated>2020-06-15T16:26:15.035Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://ERICYANYAN.github.io"/>
     <link rel="self" href="https://ERICYANYAN.github.io/atom.xml"/>
@@ -10,6 +10,29 @@
     <logo>https://ERICYANYAN.github.io/images/avatar.png</logo>
     <icon>https://ERICYANYAN.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, 没脸见人</rights>
+    <entry>
+        <title type="html"><![CDATA[失眠]]></title>
+        <id>https://ERICYANYAN.github.io/post/UorVm1j9S/</id>
+        <link href="https://ERICYANYAN.github.io/post/UorVm1j9S/">
+        </link>
+        <updated>2020-06-15T16:16:49.000Z</updated>
+        <summary type="html"><![CDATA[<p>还是自己太作</p>
+]]></summary>
+        <content type="html"><![CDATA[<p>还是自己太作</p>
+<!-- more -->
+<p>又他妈睡不着，眼睛好疼<br>
+总是这样，回到家累得不行，洗个澡玩会手机就睡不着了</p>
+<p>脑子里面乱七八糟的东西在哪里蹦跶</p>
+<p>互联网铺天盖地的信息看来真的没有啥好处<br>
+只会让大脑一直处于兴奋状态，没有休息的时间</p>
+<p>每个 app 都想剥夺你的注意力 你的精力</p>
+<p>可悲的是我还是一个正儿八经的互联网从业者</p>
+<p>所以我们到底是想从互联网得到什么</p>
+<p>越来越觉得搞互联网的都不是什么好东西 特别是搞内容 社交<br>
+到底有什么价值</p>
+<p>艹 还是去睡觉吧</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[不可抗力]]></title>
         <id>https://ERICYANYAN.github.io/post/RwFqAbJ3B/</id>
